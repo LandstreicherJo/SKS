@@ -97,7 +97,7 @@ namespace SKS // Note: actual namespace depends on the project name.
         //----------------------------------------------------------------------------------------------
         private static Item CreateAprioriAssociations(List<List<Item>> transactions)
         {
-            float minimalSupport = transactions.Count * 0.35f;
+            float minimalSupport = transactions.Count * 0.15f;
             float confidenceLevel = 0.7f;
             Console.WriteLine("minimalSupport = " + minimalSupport + "\nconfidenceLevel = " + confidenceLevel + "\n\n\n");
 
@@ -129,7 +129,7 @@ namespace SKS // Note: actual namespace depends on the project name.
             {
 
                 Console.WriteLine($"\n\n\n\nSTEP {k + 2}\n\n\n\n");
-                if (k == 1)
+                if (k >= 1)
                 {
                     List<Item> destinctItems1 = KeysDestinctToList(frequentItemsets2.Keys.ToList());
                     combinations = CreateCombinations(destinctItems1, k + 2);
