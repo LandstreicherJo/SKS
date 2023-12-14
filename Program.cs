@@ -5,9 +5,10 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Transactions;
+using System.Xml;
 using System.Xml.Linq;
 
-namespace MyApp // Note: actual namespace depends on the project name.
+namespace SKS // Note: actual namespace depends on the project name.
 {
     internal class Program
     {
@@ -77,6 +78,22 @@ namespace MyApp // Note: actual namespace depends on the project name.
             }
             return output;
         }
+
+        private static string CombinationsToString(List<List<Item>> combinations)
+        {
+            string output = string.Empty;
+            foreach (var combination in combinations)
+            {
+                output += "Key: ";
+                foreach (Item item in combination)
+                {
+                    output += item.Name + "  ";
+                }
+                output += "\n";
+            }
+            return output;
+        }
+
         //----------------------------------------------------------------------------------------------
         private static Item CreateAprioriAssociations(List<List<Item>> transactions)
         {
@@ -84,7 +101,8 @@ namespace MyApp // Note: actual namespace depends on the project name.
             float confidenceLevel = 0.7f;
             Console.WriteLine("minimalSupport = " + minimalSupport + "\nconfidenceLevel = " + confidenceLevel + "\n\n\n");
 
-            //Step 1 - Join - K=1
+            //Step 1
+            //Join - K=1
             Dictionary<Item, int> frequentItemsets = new Dictionary<Item, int>();
             foreach (List<Item> transaction in transactions)
             {
@@ -96,7 +114,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
             }
             Console.WriteLine(DictionaryToString(frequentItemsets) + "\n\n");
 
-            //Step 2 - Prune - K=1
+            //Prune - K=1
             foreach (Item item in frequentItemsets.Keys)
             {
                 if (frequentItemsets[item] < minimalSupport) frequentItemsets.Remove(item);
@@ -104,99 +122,52 @@ namespace MyApp // Note: actual namespace depends on the project name.
             Console.WriteLine(DictionaryToString(frequentItemsets) + "\n\n");
             Console.WriteLine("------------------------");
 
-            //Step 3 - Join - K=2
-            //Step 3a - Join - K=2 Combine all keys from before
-            List<Item> frequentItems = frequentItemsets.Keys.ToList();
-            List<List<Item>> combinations = CreateCombinations(frequentItems, 2);
-
-            //PRINT-----------------------------------------------
-            foreach (var combination in combinations)
-            {
-                string output = string.Empty;
-                output += "Key: ";
-                foreach (Item item in combination)
-                {
-                    output += item.Name + "  ";
-                }
-                Console.WriteLine(output);
-            }
-            //---------------------------------------------------------------------
-
-            Console.WriteLine("\n\n\n\nSTEP 3\n\n\n\n");
-            //Step 3 - Join - K=2 (Check if combination is in transaction)
             Dictionary<List<Item>, int> frequentItemsets2 = new Dictionary<List<Item>, int>();
-            frequentItemsets2 = ExecuteJoin(frequentItemsets2, combinations, transactions);
-
-            //----------------------------PRINT-------------------------------------------------------------------------------------------------------
-            foreach (var item in frequentItemsets2.Keys)
+            List<List<Item>> combinations = new List<List<Item>>();
+            int k = 0;
+            while (true)
             {
-                Console.WriteLine(TransactionToString(item) + " | " + frequentItemsets2[item]);
-            }
-            Console.WriteLine("\n\n\n");
-            //----------------------------------------------------------------------------------------------------------------------------------------
 
-
-            //Step 4 - Prune - K=2
-            frequentItemsets2 = ExecutePrune(frequentItemsets2, minimalSupport);
-            //----------------------------PRINT-------------------------------------------------------------------------------------------------------
-            foreach (var keyValuePair in frequentItemsets2)
-            {
-                Console.WriteLine(TransactionToString(keyValuePair.Key) + "  |  " + frequentItemsets2[keyValuePair.Key]);
-            }
-            //----------------------------------------------------------------------------------------------------------------------------------------
-            //----------------------------------------------------------------------------------------------------------------------------------------
-            //-------Start K3---------------------------------------------------------------------------------------------------------------------------------
-            Console.WriteLine("\n\n\n\nSTEP 4\n\n\n\n");
-
-            List<List<Item>> keys = frequentItemsets2.Keys.ToList();
-            List<Item> destinctItems = new List<Item>();
-            destinctItems = KeysDestinctToList(frequentItemsets2.Keys.ToList());
-            foreach (var sets in keys)
-            {
-                foreach (var item in sets)
+                Console.WriteLine($"\n\n\n\nSTEP {k + 2}\n\n\n\n");
+                if (k == 1)
                 {
-                    if (!destinctItems.Contains(item)) destinctItems.Add(item);
-                }
-            }
-            combinations = CreateCombinations(destinctItems, 3);
+                    List<Item> destinctItems1 = KeysDestinctToList(frequentItemsets2.Keys.ToList());
+                    combinations = CreateCombinations(destinctItems1, k + 2);
 
-            //PRINT-----------------------------------------------
-            foreach (var combination in combinations)
-            {
-                string output = string.Empty;
-                output += "Key: ";
-                foreach (Item item in combination)
+                }
+                else if (k == 0)
                 {
-                    output += item.Name + "  ";
+                    combinations = CreateCombinations(frequentItemsets.Keys.ToList(), k + 2);
                 }
-                Console.WriteLine(output);
+
+                Console.WriteLine(CombinationsToString(combinations));
+
+
+                frequentItemsets2 = new Dictionary<List<Item>, int>();
+                frequentItemsets2 = ExecuteJoin(frequentItemsets2, combinations, transactions);
+
+                //----------------------------PRINT-------------------------------------------------------------------------------------------------------
+                foreach (var item in frequentItemsets2.Keys)
+                {
+                    Console.WriteLine(TransactionToString(item) + " | " + frequentItemsets2[item]);
+                }
+                Console.WriteLine("\n\n\n");
+                //----------------------------------------------------------------------------------------------------------------------------------------
+
+
+                //Step 4 - Prune - K=2
+                frequentItemsets2 = ExecutePrune(frequentItemsets2, minimalSupport);
+                //----------------------------PRINT-------------------------------------------------------------------------------------------------------
+                foreach (var keyValuePair in frequentItemsets2)
+                {
+                    Console.WriteLine(TransactionToString(keyValuePair.Key) + "  |  " + frequentItemsets2[keyValuePair.Key]);
+                }
+                if (frequentItemsets2.Count == 0)
+                {
+                    return new Item("ii222");
+                }
+                k++;
             }
-            //---------------------------------------------------------------------
-
-
-            //Step 5 - Join - K=3 (Check if combination is in transaction)
-            frequentItemsets2 = new Dictionary<List<Item>, int>();
-            frequentItemsets2 = ExecuteJoin(frequentItemsets2, combinations, transactions);
-
-            //----------------------------PRINT-------------------------------------------------------------------------------------------------------
-            foreach (var item in frequentItemsets2.Keys)
-            {
-                Console.WriteLine(TransactionToString(item) + " | " + frequentItemsets2[item]);
-            }
-            Console.WriteLine("\n\n\n");
-            //----------------------------------------------------------------------------------------------------------------------------------------
-
-
-            //Step 6 - Prune - K=3
-            frequentItemsets2 = ExecutePrune(frequentItemsets2, minimalSupport);
-            //----------------------------PRINT-------------------------------------------------------------------------------------------------------
-            foreach (var keyValuePair in frequentItemsets2)
-            {
-                Console.WriteLine(TransactionToString(keyValuePair.Key) + "  |  " + frequentItemsets2[keyValuePair.Key]);
-            }
-            //----------------------------------------------------------------------------------------------------------------------------------------
-
-            return new Item("----");
         }
         //Destinct Items------------------------------------------------------------------------------------------------------------------
         private static List<Item> KeysDestinctToList(List<List<Item>> keys)
