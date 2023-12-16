@@ -14,9 +14,7 @@ namespace SKS
     {
         static void Main(string[] args)
         {
-            Random rnd = new Random();
-            List<List<Item>> transactions = new List<List<Item>>();
-
+            //----------------------------------------------------Assert----------------------------------------------------
             List<Item> items = new List<Item>
             {
                 new Item("Milch"),
@@ -25,8 +23,10 @@ namespace SKS
                 new Item("Reis"),
                 new Item("Brot")
             };
+            Random rnd = new Random();
+            List<List<Item>> transactions = new List<List<Item>>();
 
-            //transactions
+            //Create transactions
             for (int i = 0; i < 100; i++)
             {
                 List<Item> transaction = new List<Item>();
@@ -45,16 +45,18 @@ namespace SKS
                 }
             }
 
-
-            Console.WriteLine(TransactionsToString(transactions) + "\n\n\n");
-            Dictionary<List<List<Item>>, float> associations = CreateAprioriAssociations(transactions);
-            Console.WriteLine(PrintConfidences(associations));
-
-            //Example shopping cart
+            //Create shoppingcart
             List<Item> cart = new List<Item>() { items[0], items[2], items[3] }; //Milch, Nudeln, Reis
-            Console.WriteLine("\n\nSOLUTION-------------------------------------\n");
+
+            //----------------------------------------------------Act----------------------------------------------------
+            Console.WriteLine("-----------------------Init Object-----------------------");
+            Apriori apriori = new Apriori(transactions);
+            var a = apriori.Associations;
+            Console.WriteLine("--------------------------Output--------------------------");
+            Console.WriteLine(PrintConfidences(a));
+            var s = apriori.GetSuggestions(cart, a);
             Console.WriteLine("Shoppingcart = " + TransactionToString(cart));
-            Console.WriteLine("Suggestions = " + TransactionToString(GetSuggestions(cart, associations)));
+            Console.WriteLine("Suggestions = " + TransactionToString(s));
         }
         //Get suggestions-------------------------------------------------------------------------------------------------
         private static List<Item> GetSuggestions(List<Item> cart, Dictionary<List<List<Item>>, float> associations)
@@ -220,13 +222,6 @@ namespace SKS
                 }
                 k++;
             }
-            /*Für diese Itemsets haben wir keinen einzigen Kauf, jedoch kann man trotzdem prüfen, ob die Itemsets den Support erreichen würden. Dazu machen wir uns die Antimonotone Eigenschaft zunutze. 
-            Hierbei fällt auf, dass das Itemset (Milch, Schokolade, Reis) aus den Subsets (Milch, Schokolade), (Schokolade, Reis) und (Milch, Reis) besteht. Das Itemset (Milch, Reis) konnte aber den Support nicht erreichen, 
-            sodass auch das größere Itemset (Milch, Schokolade, Reis) nicht häufig vorkommen kann, auch wenn es dafür keine Zahlen gibt.
-            Mit derselben Begründung fallen auch die Itemsets (Milch, Nudeln, Reis) und (Nudeln, Schokolade, Reis) heraus, da das Itemset (Nudeln, Reis) nicht oft genug vorkommt. 
-            Das letzte übrig gebliebene Itemset kann jetzt genutzt werden, um mithilfe der Konfidenz Assoziationsregeln abzuleiten. 
-            */
-
             //Antimonotone Eigenschaft
             Console.WriteLine("\n\nAntimonotone Eigenschaft\n\n");
 
