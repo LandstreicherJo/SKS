@@ -44,10 +44,34 @@ namespace SKS
                     transactions.Add(transaction);
                 }
             }
-            Console.WriteLine(TransactionsToString(transactions) + "\n\n\n");
-            Console.WriteLine(PrintConfidences(CreateAprioriAssociations(transactions)));
 
+
+            Console.WriteLine(TransactionsToString(transactions) + "\n\n\n");
+            Dictionary<List<List<Item>>, float> associations = CreateAprioriAssociations(transactions);
+            Console.WriteLine(PrintConfidences(associations));
+
+            //Example shopping cart
+            List<Item> cart = new List<Item>() { items[0], items[2], items[3] }; //Milch, Nudeln, Reis
+            Console.WriteLine("\n\nSOLUTION-------------------------------------\n");
+            Console.WriteLine("Shoppingcart = " + TransactionToString(cart));
+            Console.WriteLine("Suggestions = " + TransactionToString(GetSuggestions(cart, associations)));
         }
+        //Get suggestions-------------------------------------------------------------------------------------------------
+        private static List<Item> GetSuggestions(List<Item> cart, Dictionary<List<List<Item>>, float> associations)
+        {
+            List<Item> suggestions = new List<Item>();
+            foreach (Item item in cart)
+            {
+                foreach (var associationElement in associations)
+                {
+                    if (associationElement.Key[0].Contains(item)) suggestions.AddRange(associationElement.Key[1]);
+                }
+            }
+            suggestions.RemoveAll(i => cart.Contains(i));
+            List<Item> sug = suggestions.Distinct().ToList();
+            return sug;
+        }
+        //---------------------------------------------------------------------------------------------------------------
         //----------------------To String Methods------------------------------------------------------------------------
         private static string TransactionsToString(List<List<Item>> transactions)
         {
@@ -63,10 +87,13 @@ namespace SKS
 
         private static string TransactionToString(List<Item> transaction)
         {
+            bool firstLoop = true;
             string output = string.Empty;
             foreach (Item item in transaction)
             {
-                output += item.Name + ", ";
+                if (firstLoop) output += item.Name;
+                if (!firstLoop) output += ", " + item.Name;
+                firstLoop = false;
             }
             return output;
         }
@@ -228,6 +255,7 @@ namespace SKS
             foreach (List<Item> combination in combinations)
             {
                 //TODO CAUSE NOW ITS HARD CODED
+                //TODO What if combination [2] out of index
                 confidences.Add(new List<List<Item>> { new List<Item> { combination[0] }, new List<Item> { combination[1], combination[2] } }, 0.0f); //A -> B,C
                 confidences.Add(new List<List<Item>> { new List<Item> { combination[0], combination[1] }, new List<Item> { combination[2] } }, 0.0f); //A,B -> C 
                 confidences.Add(new List<List<Item>> { new List<Item> { combination[2] }, new List<Item> { combination[0], combination[1] } }, 0.0f); //C -> A,B 
@@ -246,7 +274,7 @@ namespace SKS
                 int countKey0 = 0;
                 float supportKeys = 0.0f;
                 float supportKey0 = 0.0f;
-                List<Item> allKeys =  new List<Item>(confidence.Key[0]);
+                List<Item> allKeys = new List<Item>(confidence.Key[0]);
                 allKeys.AddRange(confidence.Key[1]);
                 foreach (var transaction in transactions)
                 {
@@ -266,7 +294,7 @@ namespace SKS
         //Prune confidences Values
         private static Dictionary<List<List<Item>>, float> PruneConfidenceValues(Dictionary<List<List<Item>>, float> confidences, float confidenceLevel)
         {
-            foreach(var confidence in confidences)
+            foreach (var confidence in confidences)
             {
                 if (confidence.Value < confidenceLevel) confidences.Remove(confidence.Key);
             }
