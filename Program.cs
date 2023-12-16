@@ -8,7 +8,7 @@ using System.Transactions;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace SKS // Note: actual namespace depends on the project name.
+namespace SKS
 {
     internal class Program
     {
@@ -17,12 +17,14 @@ namespace SKS // Note: actual namespace depends on the project name.
             Random rnd = new Random();
             List<List<Item>> transactions = new List<List<Item>>();
 
-            List<Item> items = new List<Item>();
-            items.Add(new Item("Milch"));
-            items.Add(new Item("Schokolade"));
-            items.Add(new Item("Nudeln"));
-            items.Add(new Item("Reis"));
-            items.Add(new Item("Brot"));
+            List<Item> items = new List<Item>
+            {
+                new Item("Milch"),
+                new Item("Schokolade"),
+                new Item("Nudeln"),
+                new Item("Reis"),
+                new Item("Brot")
+            };
 
             //transactions
             for (int i = 0; i < 100; i++)
@@ -43,7 +45,7 @@ namespace SKS // Note: actual namespace depends on the project name.
                 }
             }
             Console.WriteLine(TransactionsToString(transactions) + "\n\n\n");
-            Console.WriteLine(CreateAprioriAssociations(transactions).Name);
+            Console.WriteLine(PrintConfidences(CreateAprioriAssociations(transactions)));
 
         }
         //----------------------To String Methods------------------------------------------------------------------------
@@ -94,14 +96,37 @@ namespace SKS // Note: actual namespace depends on the project name.
             return output;
         }
 
-        //----------------------------------------------------------------------------------------------
-        private static Item CreateAprioriAssociations(List<List<Item>> transactions)
+        private static string PrintConfidences(Dictionary<List<List<Item>>, float> combinations)
         {
-            float minimalSupport = transactions.Count * 0.15f;
-            float confidenceLevel = 0.7f;
+            string output = string.Empty;
+            foreach (var combination in combinations)
+            {
+                output += "(";
+                foreach (var item in combination.Key[0])
+                {
+                    if (combination.Key[0].Last() != item) output += item.Name + ", ";
+                    if (combination.Key[0].Last() == item) output += item.Name;
+                }
+                output += ") -> (";
+                foreach (var item in combination.Key[1])
+                {
+                    if (combination.Key[1].Last() != item) output += item.Name + ", ";
+                    if (combination.Key[1].Last() == item) output += item.Name;
+                }
+                output += ") = " + combination.Value * 100 + "%\n";
+            }
+            return output;
+        }
+
+        //----------------------------------------------------------------------------------------------
+        private static Dictionary<List<List<Item>>, float> CreateAprioriAssociations(List<List<Item>> transactions)
+        {
+            float minimalSupport = transactions.Count * 0.35f;
+            float confidenceLevel = 0.5f;
             Console.WriteLine("minimalSupport = " + minimalSupport + "\nconfidenceLevel = " + confidenceLevel + "\n\n\n");
 
             //Step 1
+            Console.WriteLine($"\n\n\n\nSTEP 1\n\n\n\n");
             //Join - K=1
             Dictionary<Item, int> frequentItemsets = new Dictionary<Item, int>();
             foreach (List<Item> transaction in transactions)
@@ -128,7 +153,6 @@ namespace SKS // Note: actual namespace depends on the project name.
             while (true)
             {
 
-                Console.WriteLine($"\n\n\n\nSTEP {k + 2}\n\n\n\n");
                 if (k >= 1)
                 {
                     List<Item> destinctItems1 = KeysDestinctToList(frequentItemsets2.Keys.ToList());
@@ -140,6 +164,7 @@ namespace SKS // Note: actual namespace depends on the project name.
                     combinations = CreateCombinations(frequentItemsets.Keys.ToList(), k + 2);
                 }
 
+                if (combinations.Count != 0) Console.WriteLine($"\n\n\n\nSTEP {k + 2}\n\n\n\n");
                 Console.WriteLine(CombinationsToString(combinations));
 
 
@@ -164,11 +189,91 @@ namespace SKS // Note: actual namespace depends on the project name.
                 }
                 if (frequentItemsets2.Count == 0)
                 {
-                    return new Item("ii222");
+                    break;
                 }
                 k++;
             }
+            /*Für diese Itemsets haben wir keinen einzigen Kauf, jedoch kann man trotzdem prüfen, ob die Itemsets den Support erreichen würden. Dazu machen wir uns die Antimonotone Eigenschaft zunutze. 
+            Hierbei fällt auf, dass das Itemset (Milch, Schokolade, Reis) aus den Subsets (Milch, Schokolade), (Schokolade, Reis) und (Milch, Reis) besteht. Das Itemset (Milch, Reis) konnte aber den Support nicht erreichen, 
+            sodass auch das größere Itemset (Milch, Schokolade, Reis) nicht häufig vorkommen kann, auch wenn es dafür keine Zahlen gibt.
+            Mit derselben Begründung fallen auch die Itemsets (Milch, Nudeln, Reis) und (Nudeln, Schokolade, Reis) heraus, da das Itemset (Nudeln, Reis) nicht oft genug vorkommt. 
+            Das letzte übrig gebliebene Itemset kann jetzt genutzt werden, um mithilfe der Konfidenz Assoziationsregeln abzuleiten. 
+            */
+
+            //Antimonotone Eigenschaft
+            Console.WriteLine("\n\nAntimonotone Eigenschaft\n\n");
+
+            //--------------------------Calculate Confidences--------------------------------------------------------------------------------------------------
+            Console.WriteLine("\n\nCalculate confidences\n\n");
+            //Step 1 - Create Dicitonary with options (Join)
+            Dictionary<List<List<Item>>, float> confidences = new Dictionary<List<List<Item>>, float>();
+            confidences = CreateConfidenceCombinations(combinations); //CreateConfidenceCombinations of combinations of the last step (ONLY IF 3 STEPS)
+            Console.WriteLine(CombinationsToString(combinations));
+            //Step 2 - CalculateConfidenceValues
+            confidences = CalculateConfidenceValues(confidences, transactions);
+            Console.WriteLine(PrintConfidences(confidences));
+            //Step 3 - Remove KeyValuePairs under confidence level (Prune)
+            confidences = PruneConfidenceValues(confidences, confidenceLevel);
+            //Console.WriteLine(PrintConfidences(confidences));
+            //------------------------------------------------------------------------------------------------------------------------------------------------
+
+            return confidences;
         }
+
+
+        //Calculate confidences | Combinations ------------------------------------------------------------------------------------------------------------------
+        private static Dictionary<List<List<Item>>, float> CreateConfidenceCombinations(List<List<Item>> combinations)
+        {
+            Dictionary<List<List<Item>>, float> confidences = new Dictionary<List<List<Item>>, float>();
+            foreach (List<Item> combination in combinations)
+            {
+                //TODO CAUSE NOW ITS HARD CODED
+                confidences.Add(new List<List<Item>> { new List<Item> { combination[0] }, new List<Item> { combination[1], combination[2] } }, 0.0f); //A -> B,C
+                confidences.Add(new List<List<Item>> { new List<Item> { combination[0], combination[1] }, new List<Item> { combination[2] } }, 0.0f); //A,B -> C 
+                confidences.Add(new List<List<Item>> { new List<Item> { combination[2] }, new List<Item> { combination[0], combination[1] } }, 0.0f); //C -> A,B 
+                confidences.Add(new List<List<Item>> { new List<Item> { combination[2], combination[0] }, new List<Item> { combination[1] } }, 0.0f); //C,A -> B 
+                confidences.Add(new List<List<Item>> { new List<Item> { combination[1] }, new List<Item> { combination[2], combination[0] } }, 0.0f); //B -> C,A 
+                confidences.Add(new List<List<Item>> { new List<Item> { combination[1], combination[2] }, new List<Item> { combination[0] } }, 0.0f); //B,C -> A
+            }
+            return confidences;
+        }
+        //Calculate confidences | Values
+        private static Dictionary<List<List<Item>>, float> CalculateConfidenceValues(Dictionary<List<List<Item>>, float> confidences, List<List<Item>> transactions)
+        {
+            foreach (var confidence in confidences)
+            {
+                int countKeys = 0;
+                int countKey0 = 0;
+                float supportKeys = 0.0f;
+                float supportKey0 = 0.0f;
+                List<Item> allKeys =  new List<Item>(confidence.Key[0]);
+                allKeys.AddRange(confidence.Key[1]);
+                foreach (var transaction in transactions)
+                {
+                    //Support (Key[0] + Key[1])                    
+                    if (allKeys.All(e => transaction.Contains(e))) countKeys++;
+                    //Support Key[0] <==> Count transactions.Contains => Support Key[0]
+                    // In wie vielen einkäufen sind die Items des Keys vorhanden / Gesamteinkäufe
+                    if (confidence.Key[0].All(e => transaction.Contains(e))) countKey0++;
+                    //Calcualte and set Value for confidence
+                }
+                supportKeys = (float)countKeys / transactions.Count;
+                supportKey0 = (float)countKey0 / transactions.Count;
+                confidences[confidence.Key] = (supportKeys / supportKey0);
+            }
+            return confidences;
+        }
+        //Prune confidences Values
+        private static Dictionary<List<List<Item>>, float> PruneConfidenceValues(Dictionary<List<List<Item>>, float> confidences, float confidenceLevel)
+        {
+            foreach(var confidence in confidences)
+            {
+                if (confidence.Value < confidenceLevel) confidences.Remove(confidence.Key);
+            }
+            return confidences;
+        }
+
+        //------------------------------------------------------------------------------------------------------------------------------------------------------
         //Destinct Items------------------------------------------------------------------------------------------------------------------
         private static List<Item> KeysDestinctToList(List<List<Item>> keys)
         {
