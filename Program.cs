@@ -46,17 +46,28 @@ namespace SKS
             }
 
             //Create shoppingcart
-            List<Item> cart = new List<Item>() { items[0], items[2], items[3] }; //Milch, Nudeln, Reis
+            List<Item> cart1 = new List<Item>() { items[3], items[4] }; //Milch, Nudeln, Reis
+            List<Item> cart2 = new List<Item>() { items[1], items[3], items[4] }; //Milch, Nudeln, Reis
+            List<Item> cart3 = new List<Item>() { items[0], items[1] }; //Milch, Nudeln, Reis
 
             //----------------------------------------------------Act----------------------------------------------------
             Console.WriteLine("-----------------------Init Object-----------------------");
             Apriori apriori = new Apriori(transactions);
             var a = apriori.Associations;
-            Console.WriteLine("--------------------------Output--------------------------");
-            Console.WriteLine(PrintConfidences(a));
-            var s = apriori.GetSuggestions(cart, a);
-            Console.WriteLine("Shoppingcart = " + TransactionToString(cart));
-            Console.WriteLine("Suggestions = " + TransactionToString(s));
+            Console.WriteLine("\n\n--------------------------Output--------------------------\n");
+            Console.WriteLine(PrintConfidences(a) + "\n--------------------------------------------\n");
+            //cart1
+            var s = apriori.GetSuggestions(cart1, a);
+            Console.WriteLine("Shoppingcart = " + TransactionToString(cart1));
+            Console.WriteLine("Suggestions = " + TransactionToString(s) + "\n");
+            //cart3
+            s = apriori.GetSuggestions(cart2, a);
+            Console.WriteLine("Shoppingcart = " + TransactionToString(cart2));
+            Console.WriteLine("Suggestions = " + TransactionToString(s) + "\n");
+            //cart3
+            s = apriori.GetSuggestions(cart3, a);
+            Console.WriteLine("Shoppingcart = " + TransactionToString(cart3));
+            Console.WriteLine("Suggestions = " + TransactionToString(s) + "\n");
         }
         //Get suggestions-------------------------------------------------------------------------------------------------
         private static List<Item> GetSuggestions(List<Item> cart, Dictionary<List<List<Item>>, float> associations)
