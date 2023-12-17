@@ -13,10 +13,10 @@ namespace SKS
         #endregion
 
         #region ctor
-        public Apriori(List<List<Item>> transactions)
+        public Apriori(List<List<Item>> transactions, float minimalSupport, float confidenceLevel)
         {
             _transactions = transactions;
-            _associations = CreateAprioriAssociations(transactions);
+            _associations = CreateAprioriAssociations(transactions, minimalSupport, confidenceLevel);
             _debug = false;
         }
         #endregion
@@ -42,10 +42,8 @@ namespace SKS
         }
         //---------------------------------------------------------------------------------------------------------------
         //MAIN METHOD----------------------------------------------------------------------------------------------------
-        private Dictionary<List<List<Item>>, float> CreateAprioriAssociations(List<List<Item>> transactions)
+        private Dictionary<List<List<Item>>, float> CreateAprioriAssociations(List<List<Item>> transactions, float minimalSupport, float confidenceLevel)
         {
-            float minimalSupport = transactions.Count * 0.35f;
-            float confidenceLevel = 0.5f;
             if (_debug) Console.WriteLine("minimalSupport = " + minimalSupport + "\nconfidenceLevel = " + confidenceLevel + "\n\n\n");
 
             //Step 1

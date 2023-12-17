@@ -52,9 +52,9 @@ namespace SKS
 
             //----------------------------------------------------Act----------------------------------------------------
             Console.WriteLine("-----------------------Init Object-----------------------");
-            Apriori apriori = new Apriori(transactions);
+            Apriori apriori = new Apriori(transactions, transactions.Count * 0.35f, 0.5f);
             var a = apriori.Associations;
-            Console.WriteLine("\n\n--------------------------Output--------------------------\n");
+            Console.WriteLine("--------------------------Output--------------------------\n");
             Console.WriteLine(PrintConfidences(a) + "\n--------------------------------------------\n");
             //cart1
             var s = apriori.GetSuggestions(cart1);
