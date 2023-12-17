@@ -1,6 +1,7 @@
 ﻿using SKS;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 namespace SKS
 {
@@ -151,6 +152,7 @@ namespace SKS
         private static Dictionary<List<List<Item>>, float> CreateConfidenceCombinations(List<List<Item>> combinations)
         {
             Dictionary<List<List<Item>>, float> confidences = new Dictionary<List<List<Item>>, float>();
+            if (combinations.Count == 0 || combinations[0].Count != 3) return confidences;
             foreach (List<Item> combination in combinations)
             {
                 //TODO CAUSE NOW ITS HARD CODED
