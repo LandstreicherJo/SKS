@@ -46,9 +46,9 @@ namespace SKS
             }
 
             //Create shoppingcart
-            List<Item> cart1 = new List<Item>() { items[3], items[4] }; //Milch, Nudeln, Reis
-            List<Item> cart2 = new List<Item>() { items[1], items[3], items[4] }; //Milch, Nudeln, Reis
-            List<Item> cart3 = new List<Item>() { items[0], items[1] }; //Milch, Nudeln, Reis
+            List<Item> cart1 = new List<Item>() { items[3], items[4] }; //Reis, Brot, Reis
+            List<Item> cart2 = new List<Item>() { items[1], items[3], items[4] }; //Schokolade, Reis, Brot
+            List<Item> cart3 = new List<Item>() { items[0], items[1] }; //Milch, Schokolade
 
             //----------------------------------------------------Act----------------------------------------------------
             Console.WriteLine("-----------------------Init Object-----------------------");
