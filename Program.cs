@@ -57,15 +57,15 @@ namespace SKS
             Console.WriteLine("\n\n--------------------------Output--------------------------\n");
             Console.WriteLine(PrintConfidences(a) + "\n--------------------------------------------\n");
             //cart1
-            var s = apriori.GetSuggestions(cart1, a);
+            var s = apriori.GetSuggestions(cart1);
             Console.WriteLine("Shoppingcart = " + TransactionToString(cart1));
             Console.WriteLine("Suggestions = " + TransactionToString(s) + "\n");
             //cart3
-            s = apriori.GetSuggestions(cart2, a);
+            s = apriori.GetSuggestions(cart2);
             Console.WriteLine("Shoppingcart = " + TransactionToString(cart2));
             Console.WriteLine("Suggestions = " + TransactionToString(s) + "\n");
             //cart3
-            s = apriori.GetSuggestions(cart3, a);
+            s = apriori.GetSuggestions(cart3);
             Console.WriteLine("Shoppingcart = " + TransactionToString(cart3));
             Console.WriteLine("Suggestions = " + TransactionToString(s) + "\n");
         }

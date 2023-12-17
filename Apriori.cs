@@ -7,8 +7,9 @@ namespace SKS
     class Apriori
     {
         #region fields
-        List<List<Item>> _transactions;
-        Dictionary<List<List<Item>>, float> _associations;
+        private List<List<Item>> _transactions;
+        private Dictionary<List<List<Item>>, float> _associations;
+        private bool _debug;
         #endregion
 
         #region ctor
@@ -16,6 +17,7 @@ namespace SKS
         {
             _transactions = transactions;
             _associations = CreateAprioriAssociations(transactions);
+            _debug = false;
         }
         #endregion
 
@@ -24,12 +26,12 @@ namespace SKS
         #endregion
 
         #region methods
-        public List<Item> GetSuggestions(List<Item> cart, Dictionary<List<List<Item>>, float> associations)
+        public List<Item> GetSuggestions(List<Item> cart)
         {
             List<Item> suggestions = new List<Item>();
             foreach (Item item in cart)
             {
-                foreach (var associationElement in associations)
+                foreach (var associationElement in _associations)
                 {
                     if (associationElement.Key[0].Contains(item)) suggestions.AddRange(associationElement.Key[1]);
                 }
@@ -44,10 +46,10 @@ namespace SKS
         {
             float minimalSupport = transactions.Count * 0.35f;
             float confidenceLevel = 0.5f;
-            Console.WriteLine("minimalSupport = " + minimalSupport + "\nconfidenceLevel = " + confidenceLevel + "\n\n\n");
+            if (_debug) Console.WriteLine("minimalSupport = " + minimalSupport + "\nconfidenceLevel = " + confidenceLevel + "\n\n\n");
 
             //Step 1
-            Console.WriteLine($"\n\n\n\nSTEP 1\n\n\n\n");
+            if (_debug) Console.WriteLine($"\n\nSTEP 1\n\n");
             //Join - K=1
             Dictionary<Item, int> frequentItemsets = new Dictionary<Item, int>();
             foreach (List<Item> transaction in transactions)
@@ -58,15 +60,18 @@ namespace SKS
                     if (!frequentItemsets.ContainsKey(item)) frequentItemsets.Add(item, 1);
                 }
             }
-            Console.WriteLine(DictionaryToString(frequentItemsets) + "\n\n");
+            if (_debug) Console.WriteLine(DictionaryToString(frequentItemsets) + "\n\n");
 
             //Prune - K=1
-            foreach (Item item in frequentItemsets.Keys)
+            if (_debug)
             {
-                if (frequentItemsets[item] < minimalSupport) frequentItemsets.Remove(item);
+                foreach (Item item in frequentItemsets.Keys)
+                {
+                    if (frequentItemsets[item] < minimalSupport) frequentItemsets.Remove(item);
+                }
+                Console.WriteLine(DictionaryToString(frequentItemsets) + "\n\n");
+                Console.WriteLine("------------------------");
             }
-            Console.WriteLine(DictionaryToString(frequentItemsets) + "\n\n");
-            Console.WriteLine("------------------------");
 
             Dictionary<List<Item>, int> frequentItemsets2 = new Dictionary<List<Item>, int>();
             List<List<Item>> combinations = new List<List<Item>>();
@@ -85,28 +90,37 @@ namespace SKS
                     combinations = CreateCombinations(frequentItemsets.Keys.ToList(), k + 2);
                 }
 
-                if (combinations.Count != 0) Console.WriteLine($"\n\n\n\nSTEP {k + 2}\n\n\n\n");
-                Console.WriteLine(CombinationsToString(combinations));
+                if (_debug)
+                {
+                    if (combinations.Count != 0) Console.WriteLine($"\n\n\n\nSTEP {k + 2}\n\n\n\n");
+                    Console.WriteLine(CombinationsToString(combinations));
+                }
 
 
                 frequentItemsets2 = new Dictionary<List<Item>, int>();
                 frequentItemsets2 = ExecuteJoin(frequentItemsets2, combinations, transactions);
 
                 //----------------------------PRINT-------------------------------------------------------------------------------------------------------
-                foreach (var item in frequentItemsets2.Keys)
+                if (_debug)
                 {
-                    Console.WriteLine(TransactionToString(item) + " | " + frequentItemsets2[item]);
+                    foreach (var item in frequentItemsets2.Keys)
+                    {
+                        Console.WriteLine(TransactionToString(item) + " | " + frequentItemsets2[item]);
+                    }
+                    Console.WriteLine("\n\n\n");
                 }
-                Console.WriteLine("\n\n\n");
                 //----------------------------------------------------------------------------------------------------------------------------------------
 
 
                 //Step 4 - Prune - K=2
                 frequentItemsets2 = ExecutePrune(frequentItemsets2, minimalSupport);
                 //----------------------------PRINT-------------------------------------------------------------------------------------------------------
-                foreach (var keyValuePair in frequentItemsets2)
+                if (_debug)
                 {
-                    Console.WriteLine(TransactionToString(keyValuePair.Key) + "  |  " + frequentItemsets2[keyValuePair.Key]);
+                    foreach (var keyValuePair in frequentItemsets2)
+                    {
+                        Console.WriteLine(TransactionToString(keyValuePair.Key) + "  |  " + frequentItemsets2[keyValuePair.Key]);
+                    }
                 }
                 if (frequentItemsets2.Count == 0)
                 {
@@ -118,14 +132,14 @@ namespace SKS
             //Console.WriteLine("\n\nAntimonotone Eigenschaft\n\n");
 
             //--------------------------Calculate Confidences--------------------------------------------------------------------------------------------------
-            Console.WriteLine("\n\nCalculate confidences\n\n");
+            if (_debug) Console.WriteLine("\n\nCalculate confidences\n\n");
             //Step 1 - Create Dicitonary with options (Join)
             Dictionary<List<List<Item>>, float> confidences = new Dictionary<List<List<Item>>, float>();
             confidences = CreateConfidenceCombinations(combinations); //CreateConfidenceCombinations of combinations of the last step (ONLY IF 3 STEPS)
-            Console.WriteLine(CombinationsToString(combinations));
+            if (_debug) Console.WriteLine(CombinationsToString(combinations));
             //Step 2 - CalculateConfidenceValues
             confidences = CalculateConfidenceValues(confidences, transactions);
-            Console.WriteLine(PrintConfidences(confidences));
+            if (_debug) Console.WriteLine(PrintConfidences(confidences));
             //Step 3 - Remove KeyValuePairs under confidence level (Prune)
             confidences = PruneConfidenceValues(confidences, confidenceLevel);
             //Console.WriteLine(PrintConfidences(confidences));
@@ -142,7 +156,7 @@ namespace SKS
             foreach (List<Item> combination in combinations)
             {
                 //TODO CAUSE NOW ITS HARD CODED
-                //TODO What if combination [2] out of index
+                //TODO What if combination [2] out of index???
                 confidences.Add(new List<List<Item>> { new List<Item> { combination[0] }, new List<Item> { combination[1], combination[2] } }, 0.0f); //A -> B,C
                 confidences.Add(new List<List<Item>> { new List<Item> { combination[0], combination[1] }, new List<Item> { combination[2] } }, 0.0f); //A,B -> C 
                 confidences.Add(new List<List<Item>> { new List<Item> { combination[2] }, new List<Item> { combination[0], combination[1] } }, 0.0f); //C -> A,B 
@@ -247,8 +261,6 @@ namespace SKS
                     {
                         if (frequentItemsets.ContainsKey(combination)) frequentItemsets[combination] = frequentItemsets[combination] + 1;
                         if (!frequentItemsets.ContainsKey(combination)) frequentItemsets.Add(combination, 1);
-                        //Console.WriteLine("Transaction\n" + TransactionToString(transaction) + "\n");
-                        //Console.WriteLine("Combination\n" + TransactionToString(combination) + "\n---------\n");
                     }
                 }
             }
@@ -268,7 +280,7 @@ namespace SKS
         #endregion
 
         #region stringMethods
-        private string TransactionsToString(List<List<Item>> transactions)
+        /*private string TransactionsToString(List<List<Item>> transactions)
         {
             string output = string.Empty;
             int index = 1;
@@ -278,7 +290,7 @@ namespace SKS
                 index++;
             }
             return output;
-        }
+        }*/
 
         private string TransactionToString(List<Item> transaction)
         {
