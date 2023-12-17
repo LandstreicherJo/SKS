@@ -51,10 +51,10 @@ namespace SKS
             List<Item> cart3 = new List<Item>() { items[0], items[1] }; //Milch, Schokolade
 
             //----------------------------------------------------Act----------------------------------------------------
-            Console.WriteLine("-----------------------Init Object-----------------------");
+            //Console.WriteLine("-----------------------Init Object-----------------------");
             Apriori apriori = new Apriori(transactions, transactions.Count * 0.35f, 0.5f);
             var a = apriori.Associations;
-            Console.WriteLine("--------------------------Output--------------------------\n");
+            //Console.WriteLine("--------------------------Output--------------------------\n");
             Console.WriteLine(PrintConfidences(a) + "\n--------------------------------------------\n");
             //cart1
             var s = apriori.GetSuggestions(cart1);
